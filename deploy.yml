@@ -1,0 +1,95 @@
+version: "2.0"
+endpoints:
+ BalancedGateway1:
+   kind: ip
+services:
+  app1:
+    image: tuhalf/diode-gateway:0.1
+    expose:
+      - port: 443        
+        to:
+          - service: app1
+      - port: 80        
+        to:
+          - service: app1
+  app2:
+    image: tuhalf/diode-gateway:0.1
+    expose:
+      - port: 443        
+        to:
+          - service: app2
+      - port: 80        
+        to:
+          - service: app2
+  nginx:
+    image: tuhalf/basic-nodejs-loadbalancer:0.0.1
+    depends_on:
+      - app1
+      - app2
+    expose:
+      - port: 443
+        as: 443
+        to:
+          - global: true  
+            ip: BalancedGateway1
+      - port: 80
+        as: 80
+        to:
+          - global: true  
+            ip: BalancedGateway1
+      
+
+profiles:
+  compute:
+    app1:
+      resources:
+        cpu:
+          units: 0.1
+        memory:
+          size: 512Mi
+        storage:
+          size: 512Mi
+    app2:
+      resources:
+        cpu:
+          units: 0.1
+        memory:
+          size: 512Mi
+        storage:
+          size: 512Mi
+    nginx:
+      resources:
+        cpu:
+          units: 0.1
+        memory:
+          size: 512Mi
+        storage:
+          size: 1024Mi
+  placement:
+    akash:
+      attributes:
+        ip-lease: "true"
+      pricing:
+        app1:
+          denom: uakt
+          amount: 10000
+        app2:
+          denom: uakt
+          amount: 10000
+        nginx:
+          denom: uakt
+          amount: 10000
+
+deployment:
+  app1:
+    akash:
+      profile: app1
+      count: 1
+  app2:
+    akash:
+      profile: app2
+      count: 1
+  nginx:
+    akash:
+      profile: nginx
+      count: 1
